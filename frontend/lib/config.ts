@@ -1,20 +1,20 @@
 // frontend/lib/config.ts
 
-// 👇👇 غيّر هذا السطر فقط عند الرفع على سيرفر حقيقي 👇👇
-// للموبايل: ضع IP جهاز الكمبيوتر (مثل 192.168.1.8)
-// للكمبيوتر فقط: يكفي localhost
-export const SERVER_IP = "192.168.1.8"; // ⚠️ تأكد من هذا الرقم من الـ CMD بكتابة ipconfig
-export const API_PORT = "8000";
+// 👇 رابط الباك إند بتاعك على PythonAnywhere (بدون https وبدون / في الآخر)
+export const SERVER_IP = "kariem.pythonanywhere.com"; 
 
-const PROTOCOL = "http"; // اجعلها https عند الرفع
+// 👇 سيبها فاضية لأن السيرفر الحقيقي مش محتاج بورت
+export const API_PORT = ""; 
 
-export const BASE_URL = `${PROTOCOL}://${SERVER_IP}:${API_PORT}`;
+// 👇 لازم يكون https عشان Vercel يقبله
+const PROTOCOL = "https"; 
+
+export const BASE_URL = `${PROTOCOL}://${SERVER_IP}`;
 export const API_URL = `${BASE_URL}/api`;
 
 export const getFullImageUrl = (path: string | null | undefined) => {
     if (!path) return "/placeholder.png";
     if (path.startsWith("http")) return path;
-    // التأكد من عدم وجود دبل slash
     const cleanPath = path.startsWith('/') ? path : `/${path}`;
     return `${BASE_URL}${cleanPath}`;
 };
