@@ -6,8 +6,7 @@ import Link from 'next/link';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Autoplay, EffectCoverflow, Pagination, Navigation } from 'swiper/modules';
 import axios from 'axios';
-import { Slider } from '../types';
-
+import { Slider } from '@/types';
 // 👇 1. استيراد الدالة الجديدة والرابط من الكونفيج
 import { API_URL, getFullImageUrl } from '@/lib/config'; 
 
