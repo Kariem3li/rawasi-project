@@ -98,16 +98,9 @@ class ListingSerializer(serializers.ModelSerializer):
             if request: return request.build_absolute_uri(image_obj.url)
         except: pass
         
-        # ⚠️ تأكد إن الرقم ده هو الـ IP بتاع جهازك الحالي
-        return f"http://192.168.1.8:8000{image_obj.url}"
-
-    def get_is_favorite(self, obj):
-        request = self.context.get('request')
-        if request and request.user.is_authenticated:
-            # البحث عن سجل مفضلة يربط المستخدم الحالي بهذا العقار
-            return obj.favorites.filter(user=request.user).exists()
-        return False
-
+        # 👇 التعديل هنا: شلنا الـ IP الثابت وبنرجع المسار النسبي فقط
+        # والفرونت إند هو اللي هيركب عليه الدومين
+        return image_obj.url
 
     # --- دالة الإنشاء (Create) ---
     def create(self, validated_data):
