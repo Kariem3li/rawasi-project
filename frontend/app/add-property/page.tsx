@@ -236,71 +236,80 @@ export default function AddProperty() {
   };
 
   // --- Submit (التصحيح الذكي) ---
+  // --- Submit (الكود المصحح) ---
   const handleSubmit = async () => {
     const token = localStorage.getItem('token');
-      if (!token) {
-          alert("عفواً، يجب تسجيل الدخول أولاً لإضافة إعلان.");
-          window.location.href = "/login";
-          return;
-      }
-      if (!validateStep3()) return;
-      
-      setSubmitting(true);
-      setStatusMsg("جاري رفع البيانات والصور للسيرفر، يرجى الانتظار..."); 
-      
-      const data = new FormData();
-      
-      // البيانات الأساسية
-      data.append("title", `عرض ${formData.offerType} - ${selectedCategoryName}`);
-      data.append("offer_type", formData.offerType === "بيع" ? "Sale" : "Rent");
-      data.append("category", formData.category);
-      data.append("governorate", formData.gov);
-      data.append("city", formData.city);
-      
-      if (formData.zone && formData.zone !== "") data.append("major_zone", formData.zone);
-      if (formData.subdivision && formData.subdivision !== "") data.append("subdivision", formData.subdivision);
-      
-      data.append("price", formData.price);
-      data.append("area_sqm", formData.area);
-      data.append("description", formData.description);
-      
-      // تصحيح Boolean
-      data.append("is_finance_eligible", formData.isFinanceEligible ? "True" : "False");
+    if (!token) {
+        alert("عفواً، يجب تسجيل الدخول أولاً لإضافة إعلان.");
+        window.location.href = "/login";
+        return;
+    }
+    if (!validateStep3()) return;
+    
+    setSubmitting(true);
+    setStatusMsg("جاري رفع البيانات والصور للسيرفر، يرجى الانتظار..."); 
+    
+    const data = new FormData();
+    
+    // البيانات الأساسية
+    data.append("title", `عرض ${formData.offerType} - ${selectedCategoryName}`);
+    data.append("offer_type", formData.offerType === "بيع" ? "Sale" : "Rent");
+    data.append("category", formData.category);
+    data.append("governorate", formData.gov);
+    data.append("city", formData.city);
+    
+    if (formData.zone && formData.zone !== "") data.append("major_zone", formData.zone);
+    if (formData.subdivision && formData.subdivision !== "") data.append("subdivision", formData.subdivision);
+    
+    data.append("price", formData.price);
+    data.append("area_sqm", formData.area);
+    data.append("description", formData.description);
+    
+    // تصحيح Boolean
+    data.append("is_finance_eligible", formData.isFinanceEligible ? "True" : "False");
 
-      if (formData.latitude) data.append("latitude", formData.latitude);
-      if (formData.longitude) data.append("longitude", formData.longitude);
+    if (formData.latitude) data.append("latitude", formData.latitude);
+    if (formData.longitude) data.append("longitude", formData.longitude);
 
-      data.append("features_data", JSON.stringify(formData.features));
-      
-      if (formData.plotNumber) data.append("reference_code", formData.plotNumber);
-      if (formData.floorNumber) data.append("floor_number", formData.floorNumber);
+    data.append("features_data", JSON.stringify(formData.features));
+    
+    if (formData.plotNumber) data.append("reference_code", formData.plotNumber);
+    if (formData.floorNumber) data.append("floor_number", formData.floorNumber);
 
-      // الصور
-      if (formData.images.length > 0) {
-          formData.images.forEach((file) => data.append("uploaded_images", file));
-      }
-      
-      // الفيديو والوثائق
-      if (formData.video) data.append("video", formData.video);
-      if (formData.idCard) data.append("id_card_image", formData.idCard);
-      if (formData.contract) data.append("contract_image", formData.contract);
+    // 🔥🔥🔥 التصحيح هنا 🔥🔥🔥
+    // لازم نبعت الاسم والامتداد غصب عن المتصفح
+    if (formData.images.length > 0) {
+        formData.images.forEach((file, index) => {
+            // لو الملف فقد اسمه بسبب الضغط، بنخترعله اسم بامتداد jpg
+            // @ts-ignore
+            const fileName = file.name || `image_${Date.now()}_${index}.jpg`;
+            data.append("uploaded_images", file, fileName);
+        });
+    }
+    
+    // الفيديو والوثائق
+    if (formData.video) data.append("video", formData.video);
+    if (formData.idCard) data.append("id_card_image", formData.idCard);
+    if (formData.contract) data.append("contract_image", formData.contract);
 
-      try {
-          const res = await fetch(`${API_URL}/listings/`, {
-              method: "POST", headers: { "Authorization": `Token ${token}` }, body: data
-          });
+    try {
+        const res = await fetch(`${API_URL}/listings/`, {
+            method: "POST", headers: { "Authorization": `Token ${token}` }, body: data
+        });
 
-          if (res.ok) {
-              alert("✅ تم الإرسال بنجاح!");
-              window.location.href = "/";
-          } 
-          else {
-              const errData = await res.json();
-              console.error(errData);
-              alert(`عذراً، حدث خطأ:\n${JSON.stringify(errData, null, 2)}`);
+        if (res.ok) {
+            alert("✅ تم الإرسال بنجاح!");
+            window.location.href = "/";
+        } 
+        else {
+            const errData = await res.json();
+            console.error(errData);
+            // عرض رسالة خطأ واضحة
+            const errorMessages = Object.entries(errData).map(([key, val]) => `${key}: ${val}`).join("\n");
+            alert(`عذراً، حدث خطأ:\n${errorMessages}`);
            }
-      } catch (error) { alert("فشل الاتصال بالسيرفر."); } 
-      finally { setSubmitting(false); }
+    } catch (error) { alert("فشل الاتصال بالسيرفر."); } 
+    finally { setSubmitting(false); }
   };
 
   return (

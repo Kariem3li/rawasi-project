@@ -13,9 +13,14 @@ export const BASE_URL = `${PROTOCOL}://${SERVER_IP}`;
 export const API_URL = `${BASE_URL}/api`;
 
 export const getFullImageUrl = (path: string | null | undefined) => {
-    if (!path) return "/placeholder.png"; // صورة احتياطية لو مفيش صورة
-    if (path.startsWith("http")) return path;
-    // تصحيح المسار لو جاي ناقص
+    if (!path) return "/placeholder.png";
+    
+    // 1. لو الرابط كامل، تأكد إنه https
+    if (path.startsWith("http")) {
+        return path.replace("http://", "https://");
+    }
+
+    // 2. لو الرابط نسبي، ركبه على الدومين
     const cleanPath = path.startsWith('/') ? path : `/${path}`;
-    return `${BASE_URL}${cleanPath}`;
+    return `${BASE_URL}${cleanPath}`; 
 };
