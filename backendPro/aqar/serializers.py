@@ -102,7 +102,12 @@ class ListingSerializer(serializers.ModelSerializer):
         # 👇 التعديل هنا: شلنا الـ IP الثابت وبنرجع المسار النسبي فقط
         # والفرونت إند هو اللي هيركب عليه الدومين
         return image_obj.url
-
+    def get_is_favorite(self, obj):
+        request = self.context.get('request')
+        if request and request.user.is_authenticated:
+            # التحقق هل المستخدم الحالي عامل لايك للعقار ده
+            return obj.favorites.filter(user=request.user).exists()
+        return False
     # --- دالة الإنشاء (Create) ---
     def create(self, validated_data):
         features_json = validated_data.pop('features_data', None)
