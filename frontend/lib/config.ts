@@ -13,8 +13,9 @@ export const BASE_URL = `${PROTOCOL}://${SERVER_IP}`;
 export const API_URL = `${BASE_URL}/api`;
 
 export const getFullImageUrl = (path: string | null | undefined) => {
-    if (!path) return "/placeholder.png";
+    if (!path) return "/placeholder.png"; // صورة احتياطية لو مفيش صورة
     if (path.startsWith("http")) return path;
+    // تصحيح المسار لو جاي ناقص
     const cleanPath = path.startsWith('/') ? path : `/${path}`;
     return `${BASE_URL}${cleanPath}`;
 };

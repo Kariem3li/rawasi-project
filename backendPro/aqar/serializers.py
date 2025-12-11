@@ -2,6 +2,7 @@ from rest_framework import serializers
 from django.contrib.auth import get_user_model
 from .models import *
 import json
+from aqar_core.models import Slider # تأكد إننا استدعينا الموديل
 
 User = get_user_model()
 
@@ -174,3 +175,25 @@ class UserProfileSerializer(serializers.ModelSerializer):
         model = User
         fields = ['id', 'username', 'first_name', 'last_name', 'email', 'phone_number', 'whatsapp_link', 'interests']
         read_only_fields = ['username', 'id'] # نمنع تعديل اسم المستخدم
+
+
+
+class SliderSerializer(serializers.ModelSerializer):
+    image_url = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Slider
+        fields = ['id', 'title', 'subtitle', 'image_url', 'target_link', 'button_text', 'open_in_new_tab']
+
+    def get_image_url(self, obj):
+        if not obj.image:
+            return None
+        # دي الحركة السحرية: بنبني الرابط الكامل بناءً على الدومين الحالي
+        try:
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(obj.image.url)
+        except:
+            pass
+        # لو مفيش ريكويست، رجع الرابط النسبي عادي
+        return obj.image.url

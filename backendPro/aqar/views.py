@@ -8,7 +8,8 @@ from .models import *
 from .serializers import *
 from .filters import ListingFilter
 from .permissions import IsOwnerOrReadOnly  # ✅ استيراد الصلاحية الجديدة
-
+# ضيف السطر ده مع الـ imports فوق
+from aqar_core.models import Slider
 
 # --- ViewSets الثوابت (الجغرافيا والتصنيف) ---
 class GovernorateViewSet(viewsets.ReadOnlyModelViewSet):
@@ -148,3 +149,11 @@ class FavoriteViewSet(viewsets.GenericViewSet):
             fav.delete()
             return Response({"detail": "Removed", "is_favorite": False})
         return Response({"detail": "Added", "is_favorite": True})
+    
+# --- Slider ViewSet (المسؤول عن الإعلانات الرئيسية) ---
+class SliderViewSet(viewsets.ReadOnlyModelViewSet):
+    # بنجيب السلايدات النشطة فقط، وبنرتبها حسب الأولوية
+    queryset = Slider.objects.filter(is_active=True).order_by('display_order', '-created_at')
+    serializer_class = SliderSerializer  # 👈 ده اللي هيشغل كود الصور الجديد
+    pagination_class = None  # مش محتاجين صفحات، عايزينهم كلهم مرة واحدة
+    permission_classes = [permissions.AllowAny]  # 👈 مهم جداً: أي حد يشوف السلايدر
