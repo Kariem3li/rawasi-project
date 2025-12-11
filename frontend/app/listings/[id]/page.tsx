@@ -3,10 +3,10 @@ import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import { 
   MapPin, BedDouble, Bath, Ruler, CheckCircle2, Phone, MessageCircle, 
-  ArrowLeft, ChevronRight, ChevronLeft, Map, Layout, Video, Share2, ShieldCheck, Image as ImageIcon
+  ArrowLeft, ChevronRight, ChevronLeft, Map, Layout, Video, Share2, ShieldCheck, Image as ImageIcon,
+  Zap, Wind, Waves, ArrowUpFromLine // أيقونات إضافية
 } from "lucide-react";
 import Link from "next/link";
-// ✅ التعديل: استيراد الرابط ودالة الصور من ملف الإعدادات
 import { API_URL, getFullImageUrl } from "@/lib/config";
 
 export default function ListingDetails() {
@@ -22,11 +22,9 @@ export default function ListingDetails() {
   useEffect(() => {
     const fetchDetails = async () => {
       try {
-        // ✅ استخدام المتغير المستورد
         const res = await fetch(`${API_URL}/listings/${id}/`);
         if (res.ok) {
             const data = await res.json();
-            // console.log("رابط الخريطة القادم من السيرفر:", data.zone_map_image); 
             setListing(data);
         }
       } catch (error) { console.error(error); } 
@@ -61,12 +59,18 @@ export default function ListingDetails() {
       if (distance < -50) prevImage();
   };
   
+  // 🎨 دالة اختيار الأيقونة المناسبة
   const getIconForFeature = (name: string) => {
-      if (name.includes("غرف")) return <BedDouble className="w-5 h-5 mx-auto text-slate-600 mb-1" />;
-      if (name.includes("حمام")) return <Bath className="w-5 h-5 mx-auto text-slate-600 mb-1" />;
-      if (name.includes("مساحة")) return <Ruler className="w-5 h-5 mx-auto text-amber-500 mb-1" />;
-      if (name.includes("دور")) return <Layout className="w-5 h-5 mx-auto text-slate-600 mb-1" />;
-      if (name.includes("تشطيب")) return <CheckCircle2 className="w-5 h-5 mx-auto text-green-600 mb-1" />;
+      const n = name.toLowerCase();
+      if (n.includes("غرف")) return <BedDouble className="w-5 h-5 mx-auto text-slate-600 mb-1" />;
+      if (n.includes("حمام")) return <Bath className="w-5 h-5 mx-auto text-slate-600 mb-1" />;
+      if (n.includes("مساحة")) return <Ruler className="w-5 h-5 mx-auto text-amber-500 mb-1" />;
+      if (n.includes("دور") || n.includes("طابق")) return <Layout className="w-5 h-5 mx-auto text-slate-600 mb-1" />;
+      if (n.includes("تشطيب")) return <CheckCircle2 className="w-5 h-5 mx-auto text-green-600 mb-1" />;
+      if (n.includes("اسانسير") || n.includes("مصعد")) return <ArrowUpFromLine className="w-5 h-5 mx-auto text-blue-600 mb-1" />;
+      if (n.includes("كهرباء") || n.includes("عداد")) return <Zap className="w-5 h-5 mx-auto text-yellow-500 mb-1" />;
+      if (n.includes("غاز")) return <Wind className="w-5 h-5 mx-auto text-blue-400 mb-1" />;
+      if (n.includes("مياه")) return <Waves className="w-5 h-5 mx-auto text-blue-500 mb-1" />;
       return <ShieldCheck className="w-5 h-5 mx-auto text-brand-secondary mb-1" />;
   };
 
@@ -147,41 +151,50 @@ export default function ListingDetails() {
              </div>
          </div>
 
-         {/* جدول المواصفات */}
-         <div className="flex flex-wrap gap-3 mb-8">
-             <div className="bg-slate-50 rounded-2xl p-3 text-center border border-slate-100 min-w-[80px] flex-1">
+         {/* 🔥🔥🔥 شريط المزايا الموحد (الكل جنب بعضه) 🔥🔥🔥 */}
+         <div className="flex flex-wrap gap-2.5 mb-8">
+             {/* 1. المساحة (ثابتة) */}
+             <div className="bg-slate-50 rounded-2xl p-3 text-center border border-slate-100 min-w-[85px] flex-1">
                  {getIconForFeature("مساحة")}
                  <p className="text-[10px] text-gray-400 font-bold">المساحة</p>
-                 <p className="font-black text-slate-800 text-sm">{listing.area_sqm} م²</p>
+                 <p className="font-black text-slate-800 text-sm" dir="ltr">{listing.area_sqm} م²</p>
              </div>
 
+             {/* 2. الغرف (لو موجودة) */}
              {listing.bedrooms > 0 && (
-                 <div className="bg-slate-50 rounded-2xl p-3 text-center border border-slate-100 min-w-[80px] flex-1">
+                 <div className="bg-slate-50 rounded-2xl p-3 text-center border border-slate-100 min-w-[85px] flex-1">
                      {getIconForFeature("غرف")}
                      <p className="text-[10px] text-gray-400 font-bold">غرف</p>
                      <p className="font-black text-slate-800 text-sm">{listing.bedrooms}</p>
                  </div>
              )}
+
+             {/* 3. الحمامات (لو موجودة) */}
              {listing.bathrooms > 0 && (
-                 <div className="bg-slate-50 rounded-2xl p-3 text-center border border-slate-100 min-w-[80px] flex-1">
+                 <div className="bg-slate-50 rounded-2xl p-3 text-center border border-slate-100 min-w-[85px] flex-1">
                      {getIconForFeature("حمام")}
                      <p className="text-[10px] text-gray-400 font-bold">حمام</p>
                      <p className="font-black text-slate-800 text-sm">{listing.bathrooms}</p>
                  </div>
              )}
+
+             {/* 4. الدور (لو موجود) */}
              {listing.floor_number !== null && (
-                 <div className="bg-slate-50 rounded-2xl p-3 text-center border border-slate-100 min-w-[80px] flex-1">
+                 <div className="bg-slate-50 rounded-2xl p-3 text-center border border-slate-100 min-w-[85px] flex-1">
                      {getIconForFeature("دور")}
                      <p className="text-[10px] text-gray-400 font-bold">الدور</p>
                      <p className="font-black text-slate-800 text-sm">{listing.floor_number}</p>
                  </div>
              )}
 
+             {/* 5. المزايا الديناميكية (أسانسير، غاز، إلخ) بتترص هنا جنبهم */}
              {listing.dynamic_features && listing.dynamic_features.map((feat: any, idx: number) => (
-                 <div key={idx} className="bg-slate-50 rounded-2xl p-3 text-center border border-slate-100 min-w-[100px] flex-1">
+                 <div key={idx} className="bg-slate-50 rounded-2xl p-3 text-center border border-slate-100 min-w-[85px] flex-1">
                      {getIconForFeature(feat.feature_name)}
                      <p className="text-[10px] text-gray-400 font-bold line-clamp-1">{feat.feature_name}</p>
-                     <p className="font-black text-slate-800 text-sm line-clamp-1">{feat.value}</p>
+                     <p className="font-black text-slate-800 text-sm line-clamp-1">
+                        {feat.value === "نعم" || feat.value === "True" ? "متاح ✅" : feat.value}
+                     </p>
                  </div>
              ))}
          </div>
@@ -205,14 +218,13 @@ export default function ListingDetails() {
                  <div>
                      <h3 className="font-bold text-lg mb-3 text-slate-900 flex items-center gap-2"><Map className="w-5 h-5 text-blue-600" /> الموقع على الخريطة</h3>
                      <div className="h-56 w-full rounded-2xl overflow-hidden shadow-md border border-gray-200 relative group">
-                         {/* ✅ التعديل: تصحيح كود الـ Iframe */}
                          <iframe 
-                            width="100%" 
-                            height="100%" 
-                            src={`https://maps.google.com/maps?q=$${listing.latitude},${listing.longitude}&z=15&output=embed`} 
-                            className="border-0 grayscale group-hover:grayscale-0 transition duration-500"
+                           width="100%" 
+                           height="100%" 
+                           src={`http://maps.google.com/maps?q=${listing.latitude},${listing.longitude}&z=15&output=embed`} 
+                           className="border-0 grayscale group-hover:grayscale-0 transition duration-500"
                          ></iframe>
-                         <a href={`https://www.google.com/maps/search/?api=1&query=$${listing.latitude},${listing.longitude}`} target="_blank" className="absolute bottom-3 left-3 bg-white text-slate-900 px-4 py-2 rounded-full text-xs font-bold shadow-lg flex items-center gap-2 hover:bg-slate-50"><MapPin className="w-3 h-3 text-red-500"/> فتح في Google Maps</a>
+                         <a href={`https://www.google.com/maps/search/?api=1&query=${listing.latitude},${listing.longitude}`} target="_blank" className="absolute bottom-3 left-3 bg-white text-slate-900 px-4 py-2 rounded-full text-xs font-bold shadow-lg flex items-center gap-2 hover:bg-slate-50"><MapPin className="w-3 h-3 text-red-500"/> فتح في Google Maps</a>
                      </div>
                  </div>
              )}
@@ -224,9 +236,9 @@ export default function ListingDetails() {
                      </h3>
                      <div className="rounded-2xl overflow-hidden shadow-lg bg-slate-100 border-4 border-white relative group cursor-zoom-in">
                          <img 
-                            src={listing.zone_map_image} 
-                            className="w-full h-auto object-contain" 
-                            alt="Master Plan" 
+                           src={listing.zone_map_image} 
+                           className="w-full h-auto object-contain" 
+                           alt="Master Plan" 
                          />
                      </div>
                      <p className="text-[10px] text-gray-400 mt-2 text-center">مخطط توضيحي للمنطقة</p>
