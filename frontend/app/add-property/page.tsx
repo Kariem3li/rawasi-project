@@ -365,6 +365,7 @@ export default function AddProperty() {
                 )}
 
                 {/* المزايا الديناميكية */}
+                {/* المزايا الديناميكية */}
                 {dynamicFields.length > 0 && (
                     <div className="bg-amber-50/50 p-6 rounded-2xl border border-amber-100 grid grid-cols-1 md:grid-cols-2 gap-5">
                         <div className="col-span-full text-sm font-bold text-amber-700">مواصفات خاصة</div>
@@ -372,9 +373,22 @@ export default function AddProperty() {
                             <div key={feat.id} className={feat.input_type === 'text' ? 'col-span-full' : ''}>
                                 <label className="block text-xs font-bold text-slate-600 mb-1">{feat.name}</label>
                                 {feat.input_type === 'bool' ? (
-                                    <select className="w-full h-12 border border-amber-200 rounded-lg px-3 text-sm bg-white outline-none" onChange={(e) => handleFeatureInput(feat.name, e.target.value)}><option value="">اختر...</option><option value="نعم">نعم</option><option value="لا">لا</option></select>
+                                    <select 
+                                        className="w-full h-12 border border-amber-200 rounded-lg px-3 text-sm bg-white outline-none" 
+                                        // 👇👇 التعديل هنا: استخدمنا feat.id
+                                        onChange={(e) => handleFeatureInput(feat.id, e.target.value)}
+                                    >
+                                        <option value="">اختر...</option>
+                                        <option value="نعم">نعم</option>
+                                        <option value="لا">لا</option>
+                                    </select>
                                 ) : (
-                                    <input type="text" className="w-full h-12 border border-amber-200 rounded-lg px-3 text-sm outline-none" onChange={(e) => handleFeatureInput(feat.name, e.target.value)} />
+                                    <input 
+                                        type="text" 
+                                        className="w-full h-12 border border-amber-200 rounded-lg px-3 text-sm outline-none" 
+                                        // 👇👇 التعديل هنا: استخدمنا feat.id
+                                        onChange={(e) => handleFeatureInput(feat.id, e.target.value)} 
+                                    />
                                 )}
                             </div>
                         ))}
