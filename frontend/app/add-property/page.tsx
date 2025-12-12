@@ -237,6 +237,7 @@ export default function AddProperty() {
 
   // --- Submit (التصحيح الذكي) ---
   // --- Submit (الكود المصحح) ---
+  // --- Submit (النسخة المعتمدة والنهائية) ---
   const handleSubmit = async () => {
     const token = localStorage.getItem('token');
     if (!token) {
@@ -264,8 +265,6 @@ export default function AddProperty() {
     data.append("price", formData.price);
     data.append("area_sqm", formData.area);
     data.append("description", formData.description);
-    
-    // تصحيح Boolean
     data.append("is_finance_eligible", formData.isFinanceEligible ? "True" : "False");
 
     if (formData.latitude) data.append("latitude", formData.latitude);
@@ -273,21 +272,22 @@ export default function AddProperty() {
 
     data.append("features_data", JSON.stringify(formData.features));
     
+    // 👇👇👇 هنا الذكاء: البيانات دي بتتبعت بس لو المستخدم كتبها 👇👇👇
     if (formData.plotNumber) data.append("reference_code", formData.plotNumber);
+    if (formData.buildingNumber) data.append("building_number", formData.buildingNumber);
+    if (formData.apartmentNumber) data.append("apartment_number", formData.apartmentNumber);
     if (formData.floorNumber) data.append("floor_number", formData.floorNumber);
+    // 👆👆👆 ---------------------------------------------------- 👆👆👆
 
-    // 🔥🔥🔥 التصحيح هنا 🔥🔥🔥
-    // لازم نبعت الاسم والامتداد غصب عن المتصفح
+    // الصور (مع تصحيح الاسم)
     if (formData.images.length > 0) {
         formData.images.forEach((file, index) => {
-            // لو الملف فقد اسمه بسبب الضغط، بنخترعله اسم بامتداد jpg
             // @ts-ignore
             const fileName = file.name || `image_${Date.now()}_${index}.jpg`;
             data.append("uploaded_images", file, fileName);
         });
     }
     
-    // الفيديو والوثائق
     if (formData.video) data.append("video", formData.video);
     if (formData.idCard) data.append("id_card_image", formData.idCard);
     if (formData.contract) data.append("contract_image", formData.contract);
@@ -304,7 +304,6 @@ export default function AddProperty() {
         else {
             const errData = await res.json();
             console.error(errData);
-            // عرض رسالة خطأ واضحة
             const errorMessages = Object.entries(errData).map(([key, val]) => `${key}: ${val}`).join("\n");
             alert(`عذراً، حدث خطأ:\n${errorMessages}`);
            }
