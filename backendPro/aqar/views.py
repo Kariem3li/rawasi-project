@@ -1,5 +1,4 @@
-# aqar/views.py
-from rest_framework import viewsets, permissions, filters, status
+from rest_framework import viewsets, permissions, filters
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
@@ -7,8 +6,8 @@ from django.shortcuts import get_object_or_404
 from .models import *
 from .serializers import *
 from .filters import ListingFilter
-from .permissions import IsOwnerOrReadOnly  # ✅ استيراد الصلاحية الجديدة
-# ضيف السطر ده مع الـ imports فوق
+# تأكد إن ملف permissions.py موجود، لو مش موجود استخدم permissions.IsAuthenticatedOrReadOnly
+from .permissions import IsOwnerOrReadOnly 
 from aqar_core.models import Slider
 
 # --- ViewSets الثوابت (الجغرافيا والتصنيف) ---
@@ -52,7 +51,7 @@ class CategoryViewSet(viewsets.ReadOnlyModelViewSet):
 
 # --- Listing ViewSet (المحرك الرئيسي) ---
 class ListingViewSet(viewsets.ModelViewSet):
-    # ✅ 1. تحسين الأداء: جلب البيانات المرتبطة في استعلام واحد (Eager Loading)
+    # ✅ جلب كل البيانات دفعة واحدة للأداء
     queryset = Listing.objects.select_related(
         'governorate', 'city', 'major_zone', 'subdivision', 'category', 'agent'
     ).prefetch_related(
@@ -62,15 +61,15 @@ class ListingViewSet(viewsets.ModelViewSet):
     serializer_class = ListingSerializer
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_class = ListingFilter
-    search_fields = ['title', 'description', 'reference_code', 'city__name', 'major_zone__name']
+    search_fields = ['title', 'description', 'reference_code', 'city__name', 'major_zone__name', 'building_number']
     ordering_fields = ['price', 'created_at', 'area_sqm']
     
-    # ✅ 2. تطبيق الحماية: المالك فقط يعدل
+    # ✅ السماح بالقراءة للجميع، والتعديل للمالك فقط
     permission_classes = [permissions.IsAuthenticatedOrReadOnly, IsOwnerOrReadOnly]
 
     def get_queryset(self):
         queryset = super().get_queryset()
-        # فلترة المزايا الديناميكية
+        # فلترة المزايا الديناميكية (مثل: أسانسير، غاز)
         for key, value in self.request.query_params.items():
             if key.startswith('feat_') and value:
                 try:
@@ -87,7 +86,7 @@ class ListingViewSet(viewsets.ModelViewSet):
         user = self.request.user
         if user.is_authenticated:
             full_name = f"{user.first_name} {user.last_name}".strip() or user.username
-            # ✅ الأدمن فقط ينشر مباشرة، المستخدم العادي "قيد المراجعة"
+            # الأدمن ينشر مباشرة، المستخدم العادي "قيد المراجعة"
             status = 'Available' if user.is_staff else 'Pending'
             serializer.save(agent=user, owner_name=full_name, owner_phone=user.phone_number, status=status)
         else:
@@ -96,13 +95,12 @@ class ListingViewSet(viewsets.ModelViewSet):
     def perform_update(self, serializer):
         instance = serializer.instance
         
-        # حذف الصور
+        # حذف الصور المحددة
         deleted_image_ids = self.request.data.getlist('deleted_image_ids') 
         if deleted_image_ids:
-            # ✅ تأكد أن الصور تابعة لنفس العقار
             for img in ListingImage.objects.filter(id__in=deleted_image_ids, listing=instance):
-                img.image.delete() # حذف الملف الفعلي
-                img.delete()       # حذف السجل
+                img.image.delete()
+                img.delete()
         
         # حذف الفيديو
         if self.request.data.get('clear_video') == 'true':
@@ -110,7 +108,7 @@ class ListingViewSet(viewsets.ModelViewSet):
                 instance.video.delete()
                 instance.video = None
         
-        # ✅ لو المستخدم عدل بيانات، نرجع الحالة "قيد المراجعة" إلا لو كان أدمن
+        # إعادة الحالة لقيد المراجعة عند التعديل (إلا للأدمن)
         new_status = instance.status if self.request.user.is_staff else 'Pending'
         serializer.save(status=new_status)
 
@@ -119,7 +117,6 @@ class ListingViewSet(viewsets.ModelViewSet):
         if request.user.is_anonymous:
             return Response({"error": "يجب تسجيل الدخول"}, status=401)
         
-        # ✅ نفس التحسين هنا
         my_properties = self.queryset.filter(agent=request.user)
         serializer = self.get_serializer(my_properties, many=True)
         return Response(serializer.data)
@@ -149,11 +146,10 @@ class FavoriteViewSet(viewsets.GenericViewSet):
             fav.delete()
             return Response({"detail": "Removed", "is_favorite": False})
         return Response({"detail": "Added", "is_favorite": True})
-    
-# --- Slider ViewSet (المسؤول عن الإعلانات الرئيسية) ---
+
+# --- Slider ViewSet (الإعلانات الرئيسية) ---
 class SliderViewSet(viewsets.ReadOnlyModelViewSet):
-    # بنجيب السلايدات النشطة فقط، وبنرتبها حسب الأولوية
     queryset = Slider.objects.filter(is_active=True).order_by('display_order', '-created_at')
-    serializer_class = SliderSerializer  # 👈 ده اللي هيشغل كود الصور الجديد
-    pagination_class = None  # مش محتاجين صفحات، عايزينهم كلهم مرة واحدة
-    permission_classes = [permissions.AllowAny]  # 👈 مهم جداً: أي حد يشوف السلايدر
+    serializer_class = SliderSerializer 
+    pagination_class = None
+    permission_classes = [permissions.AllowAny] # ✅ أي زائر يقدر يشوف السلايدر
