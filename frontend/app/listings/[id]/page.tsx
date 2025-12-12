@@ -4,10 +4,34 @@ import { useParams } from "next/navigation";
 import { 
   MapPin, BedDouble, Bath, Ruler, CheckCircle2, Phone, MessageCircle, 
   ArrowLeft, ChevronRight, ChevronLeft, Map, Layout, Video, Share2, ShieldCheck, Image as ImageIcon,
-  Zap, Wind, Waves, ArrowUpFromLine // أيقونات إضافية
+  // 👇 تم تصحيح PaintBucket (B كابيتال)
+  Zap, Wind, Waves, ArrowUpFromLine, Trees, Car, Wifi, Snowflake, Tv, PaintBucket, Dumbbell, Utensils
 } from "lucide-react";
 import Link from "next/link";
 import { API_URL, getFullImageUrl } from "@/lib/config";
+
+// 🛠️ خريطة الأيقونات
+const iconMap: any = {
+    CheckCircle2: CheckCircle2,
+    ArrowUpFromLine: ArrowUpFromLine,
+    Zap: Zap,
+    Wind: Wind,
+    Waves: Waves,
+    Trees: Trees,
+    Car: Car,
+    Wifi: Wifi,
+    ShieldCheck: ShieldCheck,
+    Snowflake: Snowflake,
+    Tv: Tv,
+    // 👇 المفتاح Paintbucket (زي ما هو في الداتابيز)، والقيمة PaintBucket (اسم الأيقونة الصح)
+    Paintbucket: PaintBucket, 
+    Dumbbell: Dumbbell,
+    Utensils: Utensils,
+    BedDouble: BedDouble,
+    Bath: Bath,
+    Ruler: Ruler,
+    Layout: Layout
+};
 
 export default function ListingDetails() {
   const { id } = useParams();
@@ -15,7 +39,7 @@ export default function ListingDetails() {
   const [loading, setLoading] = useState(true);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
 
-  // Touch States for Swipe
+  // Swipe States
   const [touchStart, setTouchStart] = useState<number | null>(null);
   const [touchEnd, setTouchEnd] = useState<number | null>(null);
 
@@ -58,20 +82,12 @@ export default function ListingDetails() {
       if (distance > 50) nextImage();
       if (distance < -50) prevImage();
   };
-  
-  // 🎨 دالة اختيار الأيقونة المناسبة
-  const getIconForFeature = (name: string) => {
-      const n = name.toLowerCase();
-      if (n.includes("غرف")) return <BedDouble className="w-5 h-5 mx-auto text-slate-600 mb-1" />;
-      if (n.includes("حمام")) return <Bath className="w-5 h-5 mx-auto text-slate-600 mb-1" />;
-      if (n.includes("مساحة")) return <Ruler className="w-5 h-5 mx-auto text-amber-500 mb-1" />;
-      if (n.includes("دور") || n.includes("طابق")) return <Layout className="w-5 h-5 mx-auto text-slate-600 mb-1" />;
-      if (n.includes("تشطيب")) return <CheckCircle2 className="w-5 h-5 mx-auto text-green-600 mb-1" />;
-      if (n.includes("اسانسير") || n.includes("مصعد")) return <ArrowUpFromLine className="w-5 h-5 mx-auto text-blue-600 mb-1" />;
-      if (n.includes("كهرباء") || n.includes("عداد")) return <Zap className="w-5 h-5 mx-auto text-yellow-500 mb-1" />;
-      if (n.includes("غاز")) return <Wind className="w-5 h-5 mx-auto text-blue-400 mb-1" />;
-      if (n.includes("مياه")) return <Waves className="w-5 h-5 mx-auto text-blue-500 mb-1" />;
-      return <ShieldCheck className="w-5 h-5 mx-auto text-brand-secondary mb-1" />;
+
+  // دالة عرض الأيقونة
+  const renderDynamicIcon = (iconName: string) => {
+      // نتأكد إن الاسم موجود في الخريطة، لو لأ نرجع علامة صح
+      const IconComp = iconMap[iconName] || CheckCircle2;
+      return <IconComp className="w-5 h-5 mx-auto text-slate-600 mb-1" />;
   };
 
   return (
@@ -82,12 +98,10 @@ export default function ListingDetails() {
         className="relative h-[45vh] bg-slate-900 group"
         onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd}
       >
-         {/* Header Actions */}
          <div className="absolute top-0 left-0 right-0 p-4 flex justify-between items-center z-20 bg-gradient-to-b from-black/60 to-transparent" dir="ltr">
              <Link href="/" className="bg-white/20 backdrop-blur-md p-2.5 rounded-full text-white hover:bg-white/30 transition">
                 <ArrowLeft className="w-6 h-6" />
              </Link>
-             
              <button className="bg-white/20 backdrop-blur-md p-2.5 rounded-full text-white hover:bg-white/30 transition">
                 <Share2 className="w-5 h-5" />
              </button>
@@ -123,7 +137,6 @@ export default function ListingDetails() {
       {/* 2. التفاصيل */}
       <div className="px-5 py-8 -mt-8 bg-white rounded-t-[2.5rem] relative z-10 shadow-[-10px_-10px_30px_rgba(0,0,0,0.05)] min-h-[60vh]">
          
-         {/* العنوان والسعر */}
          <div className="mb-6 border-b border-gray-100 pb-6">
              <div className="flex justify-between items-start mb-3">
                  <span className={`text-xs font-bold px-3 py-1.5 rounded-lg text-white ${listing.offer_type === 'Sale' ? 'bg-slate-900' : 'bg-orange-600'}`}>
@@ -152,46 +165,50 @@ export default function ListingDetails() {
          </div>
 
          {/* 🔥🔥🔥 شريط المزايا الموحد (الكل جنب بعضه) 🔥🔥🔥 */}
-         <div className="flex flex-wrap gap-2.5 mb-8">
-             {/* 1. المساحة (ثابتة) */}
-             <div className="bg-slate-50 rounded-2xl p-3 text-center border border-slate-100 min-w-[85px] flex-1">
-                 {getIconForFeature("مساحة")}
-                 <p className="text-[10px] text-gray-400 font-bold">المساحة</p>
+         <div className="grid grid-cols-3 sm:grid-cols-4 gap-3 mb-8">
+             
+             {/* 1. المساحة */}
+             <div className="bg-slate-50 rounded-2xl p-3 text-center border border-slate-100">
+                 <Ruler className="w-5 h-5 mx-auto text-amber-500 mb-1" />
+                 <p className="text-[10px] text-gray-400 font-bold mb-0.5">المساحة</p>
                  <p className="font-black text-slate-800 text-sm" dir="ltr">{listing.area_sqm} م²</p>
              </div>
 
-             {/* 2. الغرف (لو موجودة) */}
+             {/* 2. الغرف */}
              {listing.bedrooms > 0 && (
-                 <div className="bg-slate-50 rounded-2xl p-3 text-center border border-slate-100 min-w-[85px] flex-1">
-                     {getIconForFeature("غرف")}
-                     <p className="text-[10px] text-gray-400 font-bold">غرف</p>
+                 <div className="bg-slate-50 rounded-2xl p-3 text-center border border-slate-100">
+                     <BedDouble className="w-5 h-5 mx-auto text-slate-600 mb-1" />
+                     <p className="text-[10px] text-gray-400 font-bold mb-0.5">غرف نوم</p>
                      <p className="font-black text-slate-800 text-sm">{listing.bedrooms}</p>
                  </div>
              )}
 
-             {/* 3. الحمامات (لو موجودة) */}
+             {/* 3. الحمامات */}
              {listing.bathrooms > 0 && (
-                 <div className="bg-slate-50 rounded-2xl p-3 text-center border border-slate-100 min-w-[85px] flex-1">
-                     {getIconForFeature("حمام")}
-                     <p className="text-[10px] text-gray-400 font-bold">حمام</p>
+                 <div className="bg-slate-50 rounded-2xl p-3 text-center border border-slate-100">
+                     <Bath className="w-5 h-5 mx-auto text-slate-600 mb-1" />
+                     <p className="text-[10px] text-gray-400 font-bold mb-0.5">حمامات</p>
                      <p className="font-black text-slate-800 text-sm">{listing.bathrooms}</p>
                  </div>
              )}
 
-             {/* 4. الدور (لو موجود) */}
+             {/* 4. الدور */}
              {listing.floor_number !== null && (
-                 <div className="bg-slate-50 rounded-2xl p-3 text-center border border-slate-100 min-w-[85px] flex-1">
-                     {getIconForFeature("دور")}
-                     <p className="text-[10px] text-gray-400 font-bold">الدور</p>
+                 <div className="bg-slate-50 rounded-2xl p-3 text-center border border-slate-100">
+                     <Layout className="w-5 h-5 mx-auto text-slate-600 mb-1" />
+                     <p className="text-[10px] text-gray-400 font-bold mb-0.5">الدور</p>
                      <p className="font-black text-slate-800 text-sm">{listing.floor_number}</p>
                  </div>
              )}
 
-             {/* 5. المزايا الديناميكية (أسانسير، غاز، إلخ) بتترص هنا جنبهم */}
+             {/* 5. المزايا الديناميكية */}
              {listing.dynamic_features && listing.dynamic_features.map((feat: any, idx: number) => (
-                 <div key={idx} className="bg-slate-50 rounded-2xl p-3 text-center border border-slate-100 min-w-[85px] flex-1">
-                     {getIconForFeature(feat.feature_name)}
-                     <p className="text-[10px] text-gray-400 font-bold line-clamp-1">{feat.feature_name}</p>
+                 <div key={idx} className="bg-slate-50 rounded-2xl p-3 text-center border border-slate-100">
+                     {/* رسم الأيقونة حسب اللي جاي من الداتابيز */}
+                     {renderDynamicIcon(feat.feature_icon)}
+                     {/* الاسم */}
+                     <p className="text-[10px] text-gray-400 font-bold mb-0.5 line-clamp-1">{feat.feature_name}</p>
+                     {/* القيمة */}
                      <p className="font-black text-slate-800 text-sm line-clamp-1">
                         {feat.value === "نعم" || feat.value === "True" ? "متاح ✅" : feat.value}
                      </p>
@@ -218,13 +235,8 @@ export default function ListingDetails() {
                  <div>
                      <h3 className="font-bold text-lg mb-3 text-slate-900 flex items-center gap-2"><Map className="w-5 h-5 text-blue-600" /> الموقع على الخريطة</h3>
                      <div className="h-56 w-full rounded-2xl overflow-hidden shadow-md border border-gray-200 relative group">
-                         <iframe 
-                           width="100%" 
-                           height="100%" 
-                           src={`http://maps.google.com/maps?q=${listing.latitude},${listing.longitude}&z=15&output=embed`} 
-                           className="border-0 grayscale group-hover:grayscale-0 transition duration-500"
-                         ></iframe>
-                         <a href={`https://www.google.com/maps/search/?api=1&query=${listing.latitude},${listing.longitude}`} target="_blank" className="absolute bottom-3 left-3 bg-white text-slate-900 px-4 py-2 rounded-full text-xs font-bold shadow-lg flex items-center gap-2 hover:bg-slate-50"><MapPin className="w-3 h-3 text-red-500"/> فتح في Google Maps</a>
+                         <iframe width="100%" height="100%" src={`http://googleusercontent.com/maps.google.com/6{listing.latitude},${listing.longitude}&z=15&output=embed`} className="border-0 grayscale group-hover:grayscale-0 transition duration-500"></iframe>
+                         <a href={`http://googleusercontent.com/maps.google.com/7{listing.latitude},${listing.longitude}`} target="_blank" className="absolute bottom-3 left-3 bg-white text-slate-900 px-4 py-2 rounded-full text-xs font-bold shadow-lg flex items-center gap-2 hover:bg-slate-50"><MapPin className="w-3 h-3 text-red-500"/> فتح في Google Maps</a>
                      </div>
                  </div>
              )}
@@ -235,11 +247,7 @@ export default function ListingDetails() {
                         <Layout className="w-5 h-5 text-purple-600" /> المخطط الهندسي / الكروكي
                      </h3>
                      <div className="rounded-2xl overflow-hidden shadow-lg bg-slate-100 border-4 border-white relative group cursor-zoom-in">
-                         <img 
-                           src={listing.zone_map_image} 
-                           className="w-full h-auto object-contain" 
-                           alt="Master Plan" 
-                         />
+                         <img src={listing.zone_map_image} className="w-full h-auto object-contain" alt="Master Plan" />
                      </div>
                      <p className="text-[10px] text-gray-400 mt-2 text-center">مخطط توضيحي للمنطقة</p>
                  </div>
@@ -254,7 +262,6 @@ export default function ListingDetails() {
               <a href={`https://wa.me/2${listing.owner_phone}`} target="_blank" className="flex-1 bg-[#25D366] text-white h-12 rounded-xl flex items-center justify-center gap-2 font-bold text-base hover:bg-[#1ebc57] transition shadow-lg"><MessageCircle className="w-5 h-5" /> واتساب</a>
           </div>
       </div>
-
     </main>
   );
 }

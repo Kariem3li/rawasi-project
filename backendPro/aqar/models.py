@@ -9,8 +9,6 @@ User = get_user_model()
 
 def generate_ref(): return 'REF-' + ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
 
-# (تم حذف Profile و Signals من هنا)
-
 # --- 1. الجغرافيا المرنة ---
 class Governorate(models.Model):
     name = models.CharField(max_length=100, unique=True, verbose_name="المحافظة")
@@ -44,9 +42,30 @@ class Feature(models.Model):
     name = models.CharField(max_length=100, verbose_name="الخاصية (مثل: رخصة حفر)")
     INPUT_TYPES = [('number', 'رقم'), ('bool', 'نعم/لا'), ('text', 'نص')]
     input_type = models.CharField(max_length=10, choices=INPUT_TYPES, default='bool')
+
+    # 👇👇👇 قائمة الأيقونات الجديدة (شاملة) 👇👇👇
+    ICON_CHOICES = [
+        ('CheckCircle2', '✔ علامة صح (افتراضي)'),
+        ('ArrowUpFromLine', '🛗 أسانسير / مصعد'),
+        ('Zap', '⚡ كهرباء / عداد'),
+        ('Wind', '💨 غاز طبيعي'),
+        ('Waves', '💧 مياه / سباحة'),
+        ('Trees', '🌳 حديقة / لاندسكيب'),
+        ('Car', '🚗 جراج / موقف'),
+        ('Wifi', '📶 واي فاي / إنترنت'),
+        ('ShieldCheck', '🛡 أمن وحراسة'),
+        ('Snowflake', '❄ تكييف'),
+        ('Tv', '📺 تلفزيون / دش'),
+        ('Paintbucket', '🎨 تشطيب / ديكور'),
+        ('Dumbbell', '💪 جيم / رياضة'),
+        ('Utensils', '🍽 مطبخ'),
+        ('BedDouble', '🛏 غرفة نوم'),
+        ('Bath', '🛁 حمام'),
+    ]
+    icon = models.CharField(max_length=50, choices=ICON_CHOICES, default='CheckCircle2', verbose_name="شكل الأيقونة")
+
     def __str__(self): return f"{self.name} ({self.category.name})"
 
-# --- 3. العقار ---
 # --- 3. العقار ---
 class Listing(BaseModel):
     reference_code = models.CharField(max_length=20, default=generate_ref, unique=True)
@@ -57,7 +76,6 @@ class Listing(BaseModel):
     description = models.TextField()
     custom_map_image = models.ImageField(upload_to='listings_maps/', null=True, blank=True, verbose_name="صورة مخطط خاصة")
     
-    # 👇👇👇 الحقول الجديدة والمعدلة 👇👇👇
     bedrooms = models.IntegerField(null=True, blank=True, verbose_name="غرف النوم")
     bathrooms = models.IntegerField(null=True, blank=True, verbose_name="الحمامات")
     floor_number = models.IntegerField(null=True, blank=True, verbose_name="رقم الدور")
@@ -65,7 +83,6 @@ class Listing(BaseModel):
     building_number = models.CharField(max_length=50, null=True, blank=True, verbose_name="رقم العمارة")
     apartment_number = models.CharField(max_length=50, null=True, blank=True, verbose_name="رقم الشقة")
     project_name = models.CharField(max_length=100, null=True, blank=True, verbose_name="اسم المشروع/الكمبوند")
-    # 👆👆👆 ----------------------- 👆👆👆
 
     governorate = models.ForeignKey(Governorate, on_delete=models.CASCADE)
     city = ChainedForeignKey(City, chained_field="governorate", chained_model_field="governorate", show_all=False, auto_choose=True)
@@ -99,6 +116,7 @@ class Listing(BaseModel):
         if self.agent and self.agent.phone_number:
             return {'phone': self.agent.phone_number, 'whatsapp': self.agent.whatsapp_link}
         return {'phone': '01000000000', 'whatsapp': 'https://wa.me/201000000000'}
+
 # --- 4. الجداول الفرعية ---
 class ListingFeature(models.Model):
     listing = models.ForeignKey(Listing, on_delete=models.CASCADE, related_name='features_values')
@@ -129,8 +147,6 @@ class Interaction(BaseModel):
     user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='interactions')
     interaction_type = models.CharField(max_length=10)
 
-# في ملف aqar/models.py (بعد كلاس Interaction)
-
 class Favorite(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='favorites', verbose_name="المستخدم")
     listing = models.ForeignKey(Listing, on_delete=models.CASCADE, related_name='favorites', verbose_name="العقار")
@@ -139,7 +155,6 @@ class Favorite(models.Model):
     class Meta:
         verbose_name = "مفضل"
         verbose_name_plural = "المفضلة"
-        # 🛑 مهم جداً: هذا يضمن أن المستخدم لا يستطيع إضافة نفس العقار مرتين
         unique_together = ('user', 'listing')
 
     def __str__(self):

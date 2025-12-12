@@ -2,7 +2,7 @@ from rest_framework import serializers
 from django.contrib.auth import get_user_model
 from .models import *
 import json
-from aqar_core.models import Slider # تأكد إننا استدعينا الموديل
+from aqar_core.models import Slider 
 
 User = get_user_model()
 
@@ -12,11 +12,12 @@ class FeatureSerializer(serializers.ModelSerializer):
 
 class ListingFeatureSerializer(serializers.ModelSerializer):
     feature_name = serializers.CharField(source='feature.name', read_only=True)
+    # 👇 الحقل الجديد: عشان يبعت شكل الأيقونة للفرونت
+    feature_icon = serializers.CharField(source='feature.icon', read_only=True)
+    
     class Meta: 
         model = ListingFeature
-        fields = ['id', 'feature', 'feature_name', 'value']
-
-# في ملف aqar/serializers.py (بعد ListingFeatureSerializer مثلاً)
+        fields = ['id', 'feature', 'feature_name', 'feature_icon', 'value']
 
 class FavoriteSerializer(serializers.ModelSerializer):
     class Meta:
@@ -60,19 +61,14 @@ class ListingSerializer(serializers.ModelSerializer):
     images = ListingImageSerializer(many=True, read_only=True)
     dynamic_features = ListingFeatureSerializer(source='features_values', many=True, read_only=True)  
     
-    # حقول العرض
     governorate_name = serializers.CharField(source='governorate.name', read_only=True)
     city_name = serializers.CharField(source='city.name', read_only=True)
     category_name = serializers.CharField(source='category.name', read_only=True)
     major_zone_name = serializers.CharField(source='major_zone.name', read_only=True, allow_null=True)
     subdivision_name = serializers.CharField(source='subdivision.name', read_only=True, allow_null=True)
     is_favorite = serializers.SerializerMethodField()
-
-    # حقل الخريطة المخصص
     zone_map_image = serializers.SerializerMethodField()
 
-    
-    # حقول الإدخال
     features_data = serializers.CharField(write_only=True, required=False)
     uploaded_images = serializers.ListField(
         child=serializers.ImageField(max_length=1000000, allow_empty_file=False, use_url=False),
@@ -99,62 +95,50 @@ class ListingSerializer(serializers.ModelSerializer):
             if request: return request.build_absolute_uri(image_obj.url)
         except: pass
         
-        # 👇 التعديل هنا: شلنا الـ IP الثابت وبنرجع المسار النسبي فقط
-        # والفرونت إند هو اللي هيركب عليه الدومين
         return image_obj.url
+
     def get_is_favorite(self, obj):
         request = self.context.get('request')
         if request and request.user.is_authenticated:
-            # التحقق هل المستخدم الحالي عامل لايك للعقار ده
             return obj.favorites.filter(user=request.user).exists()
         return False
-    # --- دالة الإنشاء (Create) ---
+
     def create(self, validated_data):
         features_json = validated_data.pop('features_data', None)
         uploaded_images = validated_data.pop('uploaded_images', [])
         
         listing = Listing.objects.create(**validated_data)
         
-        # حفظ الصور
         request = self.context.get('request')
-        if request and request.FILES:
-             images = request.FILES.getlist('uploaded_images')
-             for image in images:
+        if uploaded_images:
+             for image in uploaded_images:
                 ListingImage.objects.create(listing=listing, image=image)
                 if not listing.thumbnail:
                     listing.thumbnail = image
                     listing.save()
 
-        # حفظ المزايا (استخدمنا الدالة المساعدة هنا كمان لتوفير الكود)
         if features_json:
             self._save_features(listing, features_json)
 
         return listing
     
-    # --- دالة التعديل (Update) ---
     def update(self, instance, validated_data):
         features_json = validated_data.pop('features_data', None)
         uploaded_images = validated_data.pop('uploaded_images', [])
 
-        # تحديث البيانات الأساسية
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
         instance.save()
 
-        # حفظ الصور الجديدة
-        request = self.context.get('request')
-        if request and request.FILES:
-             images = request.FILES.getlist('uploaded_images')
-             for image in images:
+        if uploaded_images:
+             for image in uploaded_images:
                 ListingImage.objects.create(listing=instance, image=image)
 
-        # 🔥 تحديث المزايا
         if features_json:
             self._save_features(instance, features_json)
 
         return instance
 
-    # --- الدالة المساعدة (الذكية) ---
     def _save_features(self, listing, features_json):
         try:
             features_dict = json.loads(features_json)
@@ -162,7 +146,6 @@ class ListingSerializer(serializers.ModelSerializer):
                 if value: 
                     try:
                         feature_obj = Feature.objects.get(id=int(feature_id))
-                        # update_or_create: هي دي اللي بتحل المشكلة
                         ListingFeature.objects.update_or_create(
                             listing=listing,
                             feature=feature_obj,
@@ -172,16 +155,12 @@ class ListingSerializer(serializers.ModelSerializer):
                         pass
         except Exception as e:
             print(f"Error saving features: {e}")
-    
 
-    # --- User Profile Serializer (تعديل البيانات) ---
 class UserProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ['id', 'username', 'first_name', 'last_name', 'email', 'phone_number', 'whatsapp_link', 'interests']
-        read_only_fields = ['username', 'id'] # نمنع تعديل اسم المستخدم
-
-
+        read_only_fields = ['username', 'id']
 
 class SliderSerializer(serializers.ModelSerializer):
     image_url = serializers.SerializerMethodField()
@@ -191,14 +170,9 @@ class SliderSerializer(serializers.ModelSerializer):
         fields = ['id', 'title', 'subtitle', 'image_url', 'target_link', 'button_text', 'open_in_new_tab']
 
     def get_image_url(self, obj):
-        if not obj.image:
-            return None
-        # دي الحركة السحرية: بنبني الرابط الكامل بناءً على الدومين الحالي
+        if not obj.image: return None
         try:
             request = self.context.get('request')
-            if request:
-                return request.build_absolute_uri(obj.image.url)
-        except:
-            pass
-        # لو مفيش ريكويست، رجع الرابط النسبي عادي
+            if request: return request.build_absolute_uri(obj.image.url)
+        except: pass
         return obj.image.url
