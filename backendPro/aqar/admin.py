@@ -4,6 +4,12 @@ from .models import *
 from aqar_core.models import Notification
 from aqar_core.fcm_manager import send_push_notification
 
+# ✅ 1. جدول المزايا (عشان يظهرلك الأسانسير والغاز جوه العقار)
+class ListingFeatureInline(admin.TabularInline):
+    model = ListingFeature
+    extra = 1 # بيسيبلك خانة فاضية جاهزة للإضافة
+
+# 2. جدول الصور
 class ListingImageInline(admin.TabularInline):
     model = ListingImage
     extra = 0
@@ -14,17 +20,36 @@ class ListingImageInline(admin.TabularInline):
 class ListingAdmin(admin.ModelAdmin):
     list_display = ('title', 'status_badge', 'price', 'client_type_view', 'owner_whatsapp', 'created_at')
     list_filter = ('status', 'offer_type', 'category', 'governorate')
-    search_fields = ('title', 'owner_phone', 'owner_name')
-    inlines = [ListingImageInline]
+    search_fields = ('title', 'owner_phone', 'owner_name', 'building_number') # ضفت البحث برقم العمارة
+    
+    # ✅ هنا ربطنا المزايا بصفحة العقار
+    inlines = [ListingFeatureInline, ListingImageInline]
+    
     actions = ['approve_listings', 'reject_listings']
 
+    # ✅ تنظيم الحقول وعرض الحقول الجديدة
     fieldsets = (
         ('المراجعة', {'fields': ('status', 'is_finance_eligible')}),
         ('المالك', {'fields': ('agent', 'owner_name', 'owner_phone', 'owner_whatsapp_btn')}),
-        ('التفاصيل', {'fields': ('title', 'category', 'price', 'area_sqm', 'description')}),
-        ('الوثائق', {'fields': ('id_card_preview', 'contract_preview')}),
+        ('التفاصيل الأساسية', {'fields': ('title', 'category', 'price', 'area_sqm', 'description')}),
+        ('تفاصيل الموقع والوحدة', {
+            'fields': (
+                'governorate', 'city', 'major_zone', 'subdivision',
+                'project_name',      # جديد
+                'building_number',   # جديد
+                'floor_number',
+                'apartment_number',  # جديد
+                'bedrooms', 'bathrooms'
+            )
+        }),
+        ('الوثائق (قابل للتعديل)', {
+            # ✅ فتحنا التعديل (شلناهم من readonly)
+            'fields': ('id_card_image', 'contract_image', 'video', 'custom_map_image')
+        }),
     )
-    readonly_fields = ['owner_whatsapp_btn', 'id_card_preview', 'contract_preview']
+    
+    # شلنا id_card_image من هنا عشان تقدر تعدلهم
+    readonly_fields = ['owner_whatsapp_btn']
 
     def status_badge(self, obj):
         colors = {'Pending': 'orange', 'Available': 'green', 'Sold': 'red'}
@@ -42,25 +67,17 @@ class ListingAdmin(admin.ModelAdmin):
 
     def owner_whatsapp_btn(self, obj): return self.owner_whatsapp(obj)
 
-    def id_card_preview(self, obj):
-        return format_html('<img src="{}" style="max-width: 300px; border: 2px solid red;" />', obj.id_card_image.url) if obj.id_card_image else "لا توجد"
-
-    def contract_preview(self, obj):
-        return format_html('<img src="{}" style="max-width: 300px; border: 2px solid blue;" />', obj.contract_image.url) if obj.contract_image else "لا توجد"
-
     def approve_listings(self, request, queryset):
         queryset.update(status='Available')
         count = 0
         for listing in queryset:
             if listing.agent:
-                # 1. إشعار داخلي
                 Notification.objects.create(
                     user=listing.agent,
                     title="مبروك! 🥳",
                     message=f"تم نشر إعلانك '{listing.title}' بنجاح.",
                     notification_type='Listing'
                 )
-                # 2. 🔥 إشعار Push للموبايل
                 send_push_notification(
                     listing.agent, 
                     "تم نشر إعلانك! 🏠", 

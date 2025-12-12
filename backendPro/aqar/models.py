@@ -47,6 +47,7 @@ class Feature(models.Model):
     def __str__(self): return f"{self.name} ({self.category.name})"
 
 # --- 3. العقار ---
+# --- 3. العقار ---
 class Listing(BaseModel):
     reference_code = models.CharField(max_length=20, default=generate_ref, unique=True)
     title = models.CharField(max_length=255)
@@ -56,10 +57,16 @@ class Listing(BaseModel):
     description = models.TextField()
     custom_map_image = models.ImageField(upload_to='listings_maps/', null=True, blank=True, verbose_name="صورة مخطط خاصة")
     
+    # 👇👇👇 الحقول الجديدة والمعدلة 👇👇👇
     bedrooms = models.IntegerField(null=True, blank=True, verbose_name="غرف النوم")
     bathrooms = models.IntegerField(null=True, blank=True, verbose_name="الحمامات")
     floor_number = models.IntegerField(null=True, blank=True, verbose_name="رقم الدور")
     
+    building_number = models.CharField(max_length=50, null=True, blank=True, verbose_name="رقم العمارة")
+    apartment_number = models.CharField(max_length=50, null=True, blank=True, verbose_name="رقم الشقة")
+    project_name = models.CharField(max_length=100, null=True, blank=True, verbose_name="اسم المشروع/الكمبوند")
+    # 👆👆👆 ----------------------- 👆👆👆
+
     governorate = models.ForeignKey(Governorate, on_delete=models.CASCADE)
     city = ChainedForeignKey(City, chained_field="governorate", chained_model_field="governorate", show_all=False, auto_choose=True)
     major_zone = ChainedForeignKey(MajorZone, chained_field="city", chained_model_field="city", show_all=False, auto_choose=True)
@@ -92,7 +99,6 @@ class Listing(BaseModel):
         if self.agent and self.agent.phone_number:
             return {'phone': self.agent.phone_number, 'whatsapp': self.agent.whatsapp_link}
         return {'phone': '01000000000', 'whatsapp': 'https://wa.me/201000000000'}
-
 # --- 4. الجداول الفرعية ---
 class ListingFeature(models.Model):
     listing = models.ForeignKey(Listing, on_delete=models.CASCADE, related_name='features_values')
